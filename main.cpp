@@ -8,6 +8,7 @@
 
 bool loadDatasetFromCsv(const std::string &filename, std::vector<SampleData> &result);
 void splitTrainTest(std::vector<SampleData> &data, std::vector<SampleData> &train, std::vector<SampleData> &test, double trainRatio = 0.8);
+
 int main() {
     std::string filename = "WineQT.csv";
     std::vector<SampleData> samples;
@@ -36,7 +37,8 @@ int main() {
     std::vector<int> predictions;
     // make predictions
     for (const auto &sample : test) {
-        predictions.emplace_back(nn.predict(sample.features));
+        int prediction = nn.predict(sample.features);
+        predictions.push_back(prediction);
     }
 
     // test accuracy
@@ -62,11 +64,13 @@ bool loadDatasetFromCsv(const std::string &filename, std::vector<SampleData> &re
     std::string line;
     // skip header
     getline(file, line);
+    std::vector<float> mins, maxs;
+    bool firstFeature = true;
 
     while (getline(file, line)) {
         std::stringstream ss(line);
         std::string value;
-        SampleData sample;
+        std::vector<float> features;
 
         // read 11 features TODO: fix this to be dependent on number of features
         for (int i = 0; i < 11; i++) {
@@ -74,12 +78,39 @@ bool loadDatasetFromCsv(const std::string &filename, std::vector<SampleData> &re
             if (value == "NA") {
                 value = "0";
             }
-            sample.features.push_back(std::stof(value));
+            features.push_back(std::stof(value));
         }
+
+        if (firstFeature) {
+            mins = features;
+            maxs = features;
+            firstFeature = false;
+        } else {
+            for (size_t i = 0; i < features.size(); ++i) {
+                if (features[i] < mins[i]) {
+                    mins[i] = features[i];
+                }
+                if (features[i] > maxs[i]) {
+                    maxs[i] = features[i];
+                }
+            }
+        }
+
         // get label
         getline(ss, value, ',');
-        sample.label = std::stoi(value);
+        int label = std::stoi(value);
+
+        SampleData sample;
+        sample.label = label;
+        sample.features = features;
         result.push_back(sample);
+    }
+
+    // normalize features
+    for (auto &sample : result) {
+        for (size_t i = 0; i < sample.features.size(); ++i) {
+            sample.features[i] = (sample.features[i] - mins[i]) / (maxs[i] - mins[i]);
+        }
     }
     return true;
 }

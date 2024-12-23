@@ -12,6 +12,8 @@ void Layer::initNeurons(int numNeurons, int numWeights) {
 
 /* NeuralNetwork impl */
 NeuralNetwork::NeuralNetwork(int numInputs, int numHiddenLayers, int numNeuronsInHidden, int numOutputs) {
+    std::srand(static_cast<unsigned int>(std::time(nullptr)));
+
     // hidden layers
     for (int i = 0; i < numHiddenLayers; i++) addLayer(numNeuronsInHidden, numInputs);
 
@@ -38,59 +40,80 @@ std::vector<float> NeuralNetwork::forwardPropogate(std::vector<float> inputs) {
         }
         inputs = nextInputs;
     }
-    // represents final outputf
+    // represents final output
     return inputs;
 }
 
 void NeuralNetwork::backwardPropogateError(const std::vector<float> &expected) {
-    std::vector<float> errors;
     for (size_t i = layers.size(); i --> 0;) {
-        Layer& layer = layers[i];
-        errors.clear();
 
-        std::vector<Neuron> &neurons = layer.getNeurons();
+        std::vector<Neuron> &neurons = layers[i].getNeurons();
 
-        // not on output layer
-        if (i != layers.size() - 1) {
-            for (size_t j = 0; j < neurons.size(); j++) {
-                float error = 0.0;
-                for (const auto& weight: neurons[j].getWeights()) {
-                    error += weight * neurons[j].getDelta();
+        // iterate over each neuron in this layer
+        for (size_t n = 0; n < neurons.size(); n++)
+        {
+            float error = 0.0;
+            // feed the expected result to the output layer
+            if (i == layers.size() - 1)
+            {
+                error = expected[n] - neurons[n].getTransfer();
+            }
+            else {
+                for (auto& neu : layers[i + 1].getNeurons()) {
+                    error += (neu.getWeights()[n] * neu.getDelta());
                 }
-                errors.emplace_back(error);
             }
-        } else {
-            for (size_t j = 0; j < neurons.size(); j++) {
-                errors.push_back(neurons[j].getTransfer() - expected[j]);
-            }
+            // update the delta value of the neuron
+            neurons[n].setDelta(error * neurons[n].transferDerivative());
         }
-        for (size_t j = 0; j < neurons.size(); j++) {
-            neurons[j].setDelta(errors[j] * neurons[j].transferDerivative());
-        }
+
+        //
+        // // not on output layer
+        // if (i != layers.size() - 1) {
+        //     for (size_t j = 0; j < neurons.size(); j++) {
+        //         float error = 0.0;
+        //         for (const auto& weight: neurons[j].getWeights()) {
+        //             error += weight * neurons[j].getDelta();
+        //         }
+        //         errors.emplace_back(error);
+        //     }
+        // } else {
+        //     for (size_t j = 0; j < neurons.size(); j++) {
+        //         errors.push_back(neurons[j].getTransfer() - expected[j]);
+        //     }
+        // }
+        // for (size_t j = 0; j < neurons.size(); j++) {
+        //     neurons[j].setDelta(errors[j] * neurons[j].transferDerivative());
+        // }
     }
 }
 
 void NeuralNetwork::updateWeights(std::vector<float> inputs, float learningRate) {
-    std::vector<float> nextInput;
     for (size_t i = 0; i < layers.size(); i++) {
-        nextInput.clear();
+        std::vector<float> nextInput;
+        if (i != 0) {
+            for (auto & neuron : layers[i - 1].getNeurons()) {
+                nextInput.push_back(neuron.getTransfer());
+            }
+        } else {
+            nextInput = inputs;
+        }
         std::vector<Neuron> &neurons = layers[i].getNeurons();
 
         for (auto &neuron : neurons) {
+            std::vector<float> &weights = neuron.getWeights();
+
             // update each weight
-            for (size_t j = 0; j < inputs.size(); j++) {
-                neuron.getWeights()[j] -= learningRate * neuron.getDelta() * inputs[j];
+            for (size_t j = 0; j < nextInput.size(); j++) {
+                weights[j] += learningRate * neuron.getDelta() * nextInput[j];
             }
             // update bias
-            neuron.setDelta(-learningRate * neuron.getDelta());
-            nextInput.emplace_back(neuron.getTransfer());
+            neuron.setBias(neuron.getBias() + learningRate * neuron.getDelta());
         }
-        inputs = nextInput;
     }
 }
 
 void NeuralNetwork::train(const std::vector<SampleData> &trainingData, int numEpochs, float learningRate, size_t numOutputs) {
-
     for (int i = 0; i < numEpochs; i++) {
         float sumError = 0.0;
         for (const auto& sample: trainingData) {
@@ -98,7 +121,7 @@ void NeuralNetwork::train(const std::vector<SampleData> &trainingData, int numEp
             std::vector<float> expected(numOutputs, 0.0);
             expected[sample.label] = 1.0;
             for (size_t j = 0; j < output.size(); j++) {
-                sumError += pow(output[j] - expected[j], 2);
+                sumError += std::pow(output[j] - expected[j], 2);
             }
             backwardPropogateError(expected);
             updateWeights(sample.features, learningRate);
