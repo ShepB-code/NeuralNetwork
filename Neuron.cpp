@@ -15,13 +15,9 @@ void Neuron::initWeights(int numWeights) {
 }
 
 void Neuron::activationFunction(const std::vector<float> &input) {
+    activation = bias;
     for (size_t i = 0; i < input.size(); i++) {
         activation += input[i] * weights[i];
     }
-    activation += bias;
-}
-
-void Neuron::transferActiviation() {
-    transfer = (1 / (1 - exp(-activation)));
 }
 
