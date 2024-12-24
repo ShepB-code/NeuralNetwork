@@ -21,10 +21,10 @@ int main() {
     splitTrainTest(samples, train, test);
 
     // init neural network
-    int inputSize = 11;
+    int inputSize = 7;
     int hiddenLayers = 1;
-    int neuronsPerHiddenLayer = 11;
-    int outputSize = 11;
+    int neuronsPerHiddenLayer = 5;
+    int outputSize = 3;
 
     NeuralNetwork nn(inputSize, hiddenLayers, neuronsPerHiddenLayer, outputSize);
 
@@ -73,7 +73,7 @@ bool loadDatasetFromCsv(const std::string &filename, std::vector<SampleData> &re
         std::vector<float> features;
 
         // read 11 features TODO: fix this to be dependent on number of features
-        for (int i = 0; i < 11; i++) {
+        for (int i = 0; i < 7; i++) {
             getline(ss, value, ',');
             if (value == "NA") {
                 value = "0";

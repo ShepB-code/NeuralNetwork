@@ -66,25 +66,6 @@ void NeuralNetwork::backwardPropogateError(const std::vector<float> &expected) {
             // update the delta value of the neuron
             neurons[n].setDelta(error * neurons[n].transferDerivative());
         }
-
-        //
-        // // not on output layer
-        // if (i != layers.size() - 1) {
-        //     for (size_t j = 0; j < neurons.size(); j++) {
-        //         float error = 0.0;
-        //         for (const auto& weight: neurons[j].getWeights()) {
-        //             error += weight * neurons[j].getDelta();
-        //         }
-        //         errors.emplace_back(error);
-        //     }
-        // } else {
-        //     for (size_t j = 0; j < neurons.size(); j++) {
-        //         errors.push_back(neurons[j].getTransfer() - expected[j]);
-        //     }
-        // }
-        // for (size_t j = 0; j < neurons.size(); j++) {
-        //     neurons[j].setDelta(errors[j] * neurons[j].transferDerivative());
-        // }
     }
 }
 
